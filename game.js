@@ -539,6 +539,28 @@ function moveCoinClose() {
   const paperRect = paper.getBoundingClientRect();
   const closeRect = close.getBoundingClientRect();
   const pad = 14;
+  const mobilePopup = window.matchMedia("(max-width: 560px), (pointer: coarse)").matches;
+  if (mobilePopup) {
+    close.style.left = "auto";
+    close.style.top = "10px";
+    close.style.right = "10px";
+    if (hint) {
+      hint.style.left = "auto";
+      hint.style.top = "16px";
+      hint.style.right = "54px";
+      hint.textContent = state.coinDodges >= 3
+        ? "x button stabilized"
+        : `x button is ill-conditioned ${state.coinDodges}/3`;
+    }
+    close.classList.add("evading");
+    window.setTimeout(() => close.classList.remove("evading"), 170);
+    if (state.coinDodges >= 3) {
+      close.classList.add("catchable");
+      close.textContent = "ok";
+      close.setAttribute("aria-label", "Close derivation popup");
+    }
+    return;
+  }
   const maxX = Math.max(pad, paperRect.width - closeRect.width - pad);
   const maxY = Math.max(pad, Math.min(170, paperRect.height - closeRect.height - pad));
   const x = pad + Math.random() * (maxX - pad);
@@ -562,6 +584,7 @@ function moveCoinClose() {
       close.classList.add("catchable");
       close.textContent = "ok";
       close.setAttribute("aria-label", "Close derivation popup");
+      if (hint) hint.textContent = "x button stabilized";
     }, 210);
   }
 }
@@ -575,6 +598,11 @@ function setupCoinPopup() {
 
   close.addEventListener("pointerenter", moveCoinClose);
   close.addEventListener("click", () => {
+    if (state.coinDodges < 3) {
+      moveCoinClose();
+      playBlip("bad");
+      return;
+    }
     closeCoinPopup();
     playBlip("good");
   });
