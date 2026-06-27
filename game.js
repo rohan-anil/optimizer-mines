@@ -31,6 +31,7 @@ const state = {
     playing: false,
     master: null,
     wanted: false,
+    attemptedAutoplay: false,
     unlockArmed: false,
     unlockHandler: null
   }
@@ -1529,8 +1530,17 @@ function musicStep() {
   audio.step += 1;
 }
 
-function setupAudioContext() {
+function setupAudioContext(forceNew = false) {
   const audio = state.music;
+  if (forceNew && audio.ctx && audio.ctx.state !== "running") {
+    try {
+      audio.ctx.close();
+    } catch (_error) {
+      // Ignore stale autoplay contexts; a fresh gesture-created one is safer.
+    }
+    audio.ctx = null;
+    audio.master = null;
+  }
   if (!audio.ctx) {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return false;
@@ -1541,7 +1551,7 @@ function setupAudioContext() {
       return false;
     }
     audio.master = audio.ctx.createGain();
-    audio.master.gain.value = 0.28;
+    audio.master.gain.value = 0.5;
     audio.master.connect(audio.ctx.destination);
   }
   return true;
@@ -1566,7 +1576,7 @@ function primeAudioOutput() {
 
 function updateMusicUi(statusText) {
   const toggle = $("#musicToggle");
-  if (toggle) toggle.textContent = state.music.wanted ? "Stop music" : "Start music";
+  if (toggle) toggle.textContent = state.music.playing ? "Stop music" : "Start music";
   const status = $("#audioStatus");
   if (status && statusText) status.textContent = statusText;
 }
@@ -1582,6 +1592,16 @@ function beginMusicPlayback() {
   if (!audio.timer) audio.timer = window.setInterval(musicStep, 150);
 }
 
+function disarmMusicUnlock() {
+  const audio = state.music;
+  if (!audio.unlockHandler) return;
+  ["pointerdown", "pointerup", "click", "keydown", "touchstart", "touchend"].forEach((eventName) => {
+    document.removeEventListener(eventName, audio.unlockHandler, true);
+  });
+  audio.unlockArmed = false;
+  audio.unlockHandler = null;
+}
+
 function armMusicUnlock() {
   const audio = state.music;
   if (audio.unlockArmed) return;
@@ -1589,13 +1609,6 @@ function armMusicUnlock() {
   audio.unlockHandler = () => {
     if (!state.music.wanted) return;
     startMusic(true);
-    if (state.music.playing && state.music.unlockHandler) {
-      ["pointerdown", "pointerup", "click", "keydown", "touchstart", "touchend"].forEach((eventName) => {
-        document.removeEventListener(eventName, state.music.unlockHandler, true);
-      });
-      state.music.unlockArmed = false;
-      state.music.unlockHandler = null;
-    }
   };
   ["pointerdown", "pointerup", "click", "keydown", "touchstart", "touchend"].forEach((eventName) => {
     document.addEventListener(eventName, audio.unlockHandler, true);
@@ -1604,10 +1617,17 @@ function armMusicUnlock() {
 
 function startMusic(fromGesture = false) {
   const audio = state.music;
+  if (audio.playing && audio.ctx?.state === "running") return;
   audio.wanted = true;
   armMusicUnlock();
-  updateMusicUi(fromGesture ? "Music crystal active." : "Music crystal waking automatically.");
-  if (!setupAudioContext()) return;
+  if (!fromGesture) audio.attemptedAutoplay = true;
+  updateMusicUi(fromGesture ? "Starting music..." : "Trying to start music automatically.");
+  const forceNewContext = fromGesture && audio.attemptedAutoplay && audio.ctx && audio.ctx.state !== "running";
+  if (!setupAudioContext(forceNewContext)) return;
+  const finishStart = () => {
+    beginMusicPlayback();
+    if (state.music.playing) disarmMusicUnlock();
+  };
   if (audio.ctx.state === "suspended") {
     let resume;
     try {
@@ -1617,13 +1637,23 @@ function startMusic(fromGesture = false) {
       return;
     }
     if (resume && typeof resume.then === "function") {
-      resume.then(beginMusicPlayback).catch(() => {
+      resume.then(() => {
+        finishStart();
+        if (!state.music.playing) updateMusicUi("Music is armed; press Start music if the browser stayed locked.");
+      }).catch(() => {
         updateMusicUi("Browser blocked autoplay; the next input will retry music.");
       });
+    } else {
+      window.setTimeout(finishStart, 0);
     }
+    window.setTimeout(() => {
+      if (!state.music.playing && state.music.wanted) {
+        updateMusicUi("Music is armed; press Start music if the browser stayed locked.");
+      }
+    }, 700);
     return;
   }
-  beginMusicPlayback();
+  finishStart();
 }
 
 function stopMusic() {
@@ -1632,17 +1662,18 @@ function stopMusic() {
   audio.playing = false;
   if (audio.timer) window.clearInterval(audio.timer);
   audio.timer = null;
+  disarmMusicUnlock();
   updateMusicUi("Music crystal sleeping.");
 }
 
 function ensureMusic(fromGesture = true) {
   const audio = state.music;
-  if (!audio.playing || !audio.wanted || audio.ctx?.state === "suspended") startMusic(fromGesture);
+  if (!audio.playing || audio.ctx?.state !== "running") startMusic(fromGesture);
 }
 
 function setupMusic() {
   $("#musicToggle").addEventListener("click", () => {
-    if (state.music.wanted) stopMusic();
+    if (state.music.playing) stopMusic();
     else startMusic(true);
   });
   startMusic();
