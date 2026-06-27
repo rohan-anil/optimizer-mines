@@ -618,6 +618,7 @@ function setupCoinPopup() {
 
   close.addEventListener("pointerenter", moveCoinClose);
   close.addEventListener("click", () => {
+    ensureMusic();
     if (state.coinDodges < 3) {
       moveCoinClose(true);
       playBlip("bad");
@@ -627,6 +628,7 @@ function setupCoinPopup() {
     playBlip("good");
   });
   continueButton.addEventListener("click", () => {
+    ensureMusic();
     closeCoinPopup();
     playBlip("good");
   });
@@ -1327,12 +1329,12 @@ function checkForgeRound() {
     addCookies(3);
     updateForgeMachine("good");
     setFeedback($("#forgeFeedback"), `Correct. ${round.name} earns 3 Cookie points.`, "good");
-    playBlip("win");
+    playForgeSound("success");
   } else {
     updateForgeMachine("bad", mistakes);
     const fixes = mistakes.map((group) => `${group}: ${labels[group][round.answer[group]]}`);
     setFeedback($("#forgeFeedback"), `Not yet. Fix highlighted slots: ${fixes.join("; ")}.`, "bad");
-    playBlip("bad");
+    playForgeSound("fail");
   }
 }
 
@@ -1428,7 +1430,7 @@ function setupMomentumControls() {
 
 function playBlip(kind) {
   const audio = state.music;
-  if (!audio.ctx) return;
+  if (!audio.ctx || audio.ctx.state !== "running") return;
   const ctx = audio.ctx;
   const now = ctx.currentTime;
   const osc = ctx.createOscillator();
@@ -1442,6 +1444,48 @@ function playBlip(kind) {
   gain.connect(audio.master || ctx.destination);
   osc.start(now);
   osc.stop(now + 0.22);
+}
+
+function playNoiseBurst(time, duration = 0.05, gainValue = 0.04) {
+  const audio = state.music;
+  const ctx = audio.ctx;
+  const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * duration)), ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    const fade = 1 - i / data.length;
+    data[i] = (Math.random() * 2 - 1) * fade * fade;
+  }
+  const src = ctx.createBufferSource();
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(gainValue, time);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+  src.buffer = buffer;
+  src.connect(gain);
+  gain.connect(audio.master);
+  src.start(time);
+}
+
+function playForgeSound(kind = "success") {
+  const audio = state.music;
+  if (!audio.ctx || audio.ctx.state !== "running" || !audio.master) return;
+  const ctx = audio.ctx;
+  const now = ctx.currentTime + 0.01;
+  if (kind === "fail") {
+    [0, 0.12].forEach((offset, i) => {
+      playNoiseBurst(now + offset, 0.09, 0.075);
+      playNote(i === 0 ? 98 : 73.42, now + offset, 0.14, 0.055, "sawtooth");
+    });
+    playNote(61.74, now + 0.27, 0.2, 0.045, "triangle");
+    return;
+  }
+
+  [0, 0.1, 0.2].forEach((offset, i) => {
+    playNoiseBurst(now + offset, 0.045, 0.055);
+    playNote([164.81, 196, 246.94][i], now + offset, 0.08, 0.045, "square");
+  });
+  [329.63, 392, 493.88, 659.25].forEach((freq, i) => {
+    playNote(freq, now + 0.3 + i * 0.055, 0.09, 0.05, i % 2 ? "triangle" : "square");
+  });
 }
 
 function playNote(freq, time, duration, gainValue, type = "square") {
@@ -1461,19 +1505,7 @@ function playNote(freq, time, duration, gainValue, type = "square") {
 }
 
 function playNoise(time) {
-  const audio = state.music;
-  const ctx = audio.ctx;
-  const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
-  const src = ctx.createBufferSource();
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.04, time);
-  gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
-  src.buffer = buffer;
-  src.connect(gain);
-  gain.connect(audio.master);
-  src.start(time);
+  playNoiseBurst(time, 0.05, 0.04);
 }
 
 function musicStep() {
@@ -1488,6 +1520,10 @@ function musicStep() {
   if (step % 4 === 0) playNote(scale[bass[step]] / 2, now, 0.18, 0.045, "triangle");
   if (step % 4 === 2) playNoise(now);
   audio.step += 1;
+}
+
+function mobileAudioGate() {
+  return window.matchMedia("(pointer: coarse)").matches;
 }
 
 function setupAudioContext() {
@@ -1508,6 +1544,23 @@ function setupAudioContext() {
   return true;
 }
 
+function primeAudioOutput() {
+  const audio = state.music;
+  if (!audio.ctx || !audio.master || audio.ctx.state !== "running") return;
+  const ctx = audio.ctx;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "square";
+  osc.frequency.setValueAtTime(220, ctx.currentTime);
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.018, ctx.currentTime + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.055);
+  osc.connect(gain);
+  gain.connect(audio.master);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.07);
+}
+
 function updateMusicUi(statusText) {
   const toggle = $("#musicToggle");
   if (toggle) toggle.textContent = state.music.wanted ? "Stop music" : "Start music";
@@ -1521,6 +1574,7 @@ function beginMusicPlayback() {
   const wasPlaying = audio.playing;
   audio.playing = true;
   updateMusicUi("Music crystal active.");
+  primeAudioOutput();
   if (!wasPlaying) musicStep();
   if (!audio.timer) audio.timer = window.setInterval(musicStep, 150);
 }
@@ -1531,25 +1585,29 @@ function armMusicUnlock() {
   audio.unlockArmed = true;
   audio.unlockHandler = () => {
     if (!state.music.wanted) return;
-    startMusic();
+    startMusic(true);
     if (state.music.playing && state.music.unlockHandler) {
-      ["pointerdown", "click", "keydown", "touchstart"].forEach((eventName) => {
+      ["pointerdown", "pointerup", "click", "keydown", "touchstart", "touchend"].forEach((eventName) => {
         document.removeEventListener(eventName, state.music.unlockHandler, true);
       });
       state.music.unlockArmed = false;
       state.music.unlockHandler = null;
     }
   };
-  ["pointerdown", "click", "keydown", "touchstart"].forEach((eventName) => {
+  ["pointerdown", "pointerup", "click", "keydown", "touchstart", "touchend"].forEach((eventName) => {
     document.addEventListener(eventName, audio.unlockHandler, true);
   });
 }
 
-function startMusic() {
+function startMusic(fromGesture = false) {
   const audio = state.music;
   audio.wanted = true;
-  updateMusicUi("Music crystal waking. Click anywhere if the browser guards the gate.");
   armMusicUnlock();
+  if (!fromGesture && mobileAudioGate() && !audio.ctx) {
+    updateMusicUi("Tap anywhere to wake the chiptune crystal.");
+    return;
+  }
+  updateMusicUi("Music crystal waking. Click anywhere if the browser guards the gate.");
   if (!setupAudioContext()) return;
   if (audio.ctx.state === "suspended") {
     let resume;
@@ -1578,14 +1636,15 @@ function stopMusic() {
   updateMusicUi("Music crystal sleeping.");
 }
 
-function ensureMusic() {
-  if (!state.music.playing || !state.music.wanted) startMusic();
+function ensureMusic(fromGesture = true) {
+  const audio = state.music;
+  if (!audio.playing || !audio.wanted || audio.ctx?.state === "suspended") startMusic(fromGesture);
 }
 
 function setupMusic() {
   $("#musicToggle").addEventListener("click", () => {
     if (state.music.wanted) stopMusic();
-    else startMusic();
+    else startMusic(true);
   });
   startMusic();
 }
