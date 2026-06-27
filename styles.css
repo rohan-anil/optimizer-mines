@@ -401,6 +401,14 @@ a {
   z-index: 1;
 }
 
+.nesterov-bubble mjx-container[display="true"] {
+  position: relative;
+  z-index: 1;
+  margin: 1px 0 0 !important;
+  font-size: 84% !important;
+  text-align: left !important;
+}
+
 .coin-plot {
   min-height: 300px;
   padding: 14px 14px 10px;

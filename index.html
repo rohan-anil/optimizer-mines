@@ -40,10 +40,14 @@
       <section class="coin-component-row" aria-label="Optimizer component decomposition">
         <div class="component-card momentum-slot">
           <span class="component-label">1. Momentum</span>
-          <strong>Nesterov matrix update</strong>
+          <strong>Nesterov buffer update</strong>
           <div class="nesterov-bubble">
-            <span>Nesterov input</span>
-            \(U_t=(1-\mu)G_t+\mu m_t\)
+            <span>autodiff-friendly input</span>
+            \[
+            G_t=\nabla f(W_t),\quad
+            C_t=\beta C_{t-1}+G_t,\quad
+            U_t=G_t+\beta C_t
+            \]
           </div>
         </div>
         <div class="component-card precondition-slot">
@@ -87,7 +91,7 @@
             <div class="coin-math">
               \[
               \begin{aligned}
-              U_t &= A\Sigma B^\top\\
+              U_t &= G_t+\beta C_t=A\Sigma B^\top\\
               X_0 &= U_t/\|U_t\|_F\\
               X_{k+1} &= \frac{1}{2}X_k(3I-X_k^\top X_k)\\
               Q_t^{\rm NS} &\approx X_K\approx \operatorname{sign}(U_t)=AB^\top
@@ -104,7 +108,7 @@
             <div class="coin-math shampoo-math">
               \[
               \begin{aligned}
-              U_t &= A\Sigma B^\top\\
+              U_t &= G_t+\beta C_t=A\Sigma B^\top\\
               L_t &= U_tU_t^\top = A\Sigma^2A^\top\\
               R_t &= U_t^\top U_t = B\Sigma^2B^\top\\
               L_t^{-1/4}U_tR_t^{-1/4}

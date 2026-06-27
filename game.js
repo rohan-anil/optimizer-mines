@@ -74,6 +74,12 @@ const momentumLessons = {
         note: "Visual cue: the blue ghost jumps ahead, then the yellow update descends from the ghost."
       },
       {
+        cue: "optimizer-code form",
+        text: "Deep-learning optimizers usually keep autodiff at the current weights. The Nesterov part is rearranged into a buffer plus a lookahead direction.",
+        math: "\\[g_k=\\nabla f(x_k),\\qquad c_k=\\beta c_{k-1}+g_k,\\qquad u_k=g_k+\\beta c_k.\\]",
+        note: "This is the Lion-K/Muon-style coding pattern: compute today's gradient once, then pass the lookahead direction u_k to sign, polar, or preconditioning."
+      },
+      {
         cue: "per-mode recurrence",
         text: "On an eigen-direction with curvature lambda, the algorithm becomes a scalar two-step recurrence.",
         math: "\\[e_{k+1}=\\left(1-\\frac{\\lambda}{L}\\right)\\bigl((1+\\beta)e_k-\\beta e_{k-1}\\bigr).\\]",
@@ -276,9 +282,9 @@ const forgeRounds = [
   },
   {
     name: "Muon",
-    desc: "Matrix momentum becomes a polar/sign direction through Newton-Schulz orthogonalization.",
-    rule: "M_t=\\beta M_{t-1}+G_t,\\qquad \\Delta W_t=-\\eta\\operatorname{NS}(M_t)",
-    answer: { memory: "heavyball", direction: "muon", magnitude: "self", decay: "none" }
+    desc: "Current matrix gradient plus a Nesterov buffer becomes a polar/sign direction through Newton-Schulz orthogonalization.",
+    rule: "C_t=\\beta C_{t-1}+G_t,\\qquad M_t=G_t+\\beta C_t,\\qquad \\Delta W_t=-\\eta\\operatorname{NS}(M_t)",
+    answer: { memory: "nesterov", direction: "muon", magnitude: "self", decay: "none" }
   },
   {
     name: "Shampoo",
@@ -295,8 +301,8 @@ const forgeRounds = [
   {
     name: "Adam-grafted Muon",
     desc: "Use Muon's polar direction, but copy the layer-wise step norm from Adam.",
-    rule: "\\Delta W_\\ell=-\\frac{\\|u_\\ell^{Adam}\\|_F}{\\|\\operatorname{NS}(M_\\ell)\\|_F+\\epsilon}\\operatorname{NS}(M_\\ell)",
-    answer: { memory: "heavyball", direction: "muon", magnitude: "adam", decay: "adamw" }
+    rule: "M_t=G_t+\\beta C_t,\\qquad \\Delta W_\\ell=-\\frac{\\|u_\\ell^{Adam}\\|_F}{\\|\\operatorname{NS}(M_\\ell)\\|_F+\\epsilon}\\operatorname{NS}(M_\\ell)",
+    answer: { memory: "nesterov", direction: "muon", magnitude: "adam", decay: "adamw" }
   },
   {
     name: "Adam-grafted Shampoo",
@@ -345,21 +351,21 @@ const quizRounds = [
   {
     name: "Muon",
     answers: ["Muon"],
-    slots: ["heavy-ball matrix momentum", "Newton-Schulz polar direction", "spectral / own norm", "usually no decay in the core rule"],
-    rule: "M_t=\\beta M_{t-1}+G_t,\\quad \\Delta W_t=-\\eta\\,\\operatorname{NS}(M_t)",
+    slots: ["Nesterov matrix momentum", "Newton-Schulz polar direction", "spectral / own norm", "usually no decay in the core rule"],
+    rule: "C_t=\\beta C_{t-1}+G_t,\\quad M_t=G_t+\\beta C_t,\\quad \\Delta W_t=-\\eta\\,\\operatorname{NS}(M_t)",
     options: ["Muon", "AdamW", "Shampoo", "AdaMax"]
   },
   {
     name: "MuonW",
     answers: ["MuonW"],
-    slots: ["heavy-ball matrix momentum", "Newton-Schulz polar direction", "spectral / own norm", "decoupled LR shrink"],
-    rule: "W_{t+1}=(1-\\eta\\lambda)W_t-\\eta\\operatorname{NS}(M_t)",
+    slots: ["Nesterov matrix momentum", "Newton-Schulz polar direction", "spectral / own norm", "decoupled LR shrink"],
+    rule: "C_t=\\beta C_{t-1}+G_t,\\quad M_t=G_t+\\beta C_t,\\quad W_{t+1}=(1-\\eta\\lambda)W_t-\\eta\\operatorname{NS}(M_t)",
     options: ["MuonW", "Muon", "AdamW", "NAdam"]
   },
   {
     name: "Adam-grafted Muon",
     answers: ["Adam-grafted Muon"],
-    slots: ["heavy-ball matrix momentum", "Muon polar direction", "Adam layer step norm", "optional LR shrink"],
+    slots: ["Nesterov matrix momentum", "Muon polar direction", "Adam layer step norm", "optional LR shrink"],
     rule: "\\Delta W_\\ell=-\\frac{\\|u^{Adam}_\\ell\\|_F}{\\|\\operatorname{NS}(M_\\ell)\\|_F+\\epsilon}\\operatorname{NS}(M_\\ell)",
     options: ["Adam-grafted Muon", "Muon", "AdamW", "Shampoo"]
   },
@@ -1160,13 +1166,13 @@ function setupGrafting() {
 function memoryFormula(memory) {
   if (memory === "ema") return "m_t=\\beta_1m_{t-1}+(1-\\beta_1)g_t";
   if (memory === "heavyball") return "m_t=\\beta m_{t-1}+g_t";
-  if (memory === "nesterov") return "g_t=\\nabla f(w_t+\\beta(w_t-w_{t-1}))";
+  if (memory === "nesterov") return "c_t=\\beta c_{t-1}+g_t,\\quad m_t=g_t+\\beta c_t";
   return "m_t=g_t";
 }
 
 function directionFormula(direction) {
   if (direction === "adam") return "d_t=\\hat m_t/(\\sqrt{\\hat v_t}+\\epsilon)";
-  if (direction === "muon") return "d_t=\\operatorname{NS}(M_t)\\approx\\operatorname{polar}(M_t)";
+  if (direction === "muon") return "d_t=\\operatorname{NS}(m_t)\\approx\\operatorname{polar}(m_t)";
   if (direction === "shampoo") return "d_t=L_t^{-1/4}m_tR_t^{-1/4}";
   return "d_t=m_t";
 }
