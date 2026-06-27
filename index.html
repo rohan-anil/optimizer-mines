@@ -23,7 +23,132 @@
   <div class="scanlines" aria-hidden="true"></div>
   <div class="stars" aria-hidden="true"></div>
 
-  <div id="storyOverlay" class="story-overlay" role="dialog" aria-modal="true" aria-labelledby="storyTitle">
+  <div id="coinPopup" class="coin-popup" role="dialog" aria-modal="true" aria-labelledby="coinTitle">
+    <article class="coin-paper">
+      <button id="coinClose" class="coin-close" type="button" aria-label="Close derivation popup">x</button>
+      <span id="coinCloseHint" class="coin-close-hint">x button is ill-conditioned</span>
+      <header class="coin-header">
+        <p class="coin-kicker">optimizer field note</p>
+        <h1 id="coinTitle">Muon vs Shampoo at \(\beta_2=0\)</h1>
+        <p>
+          Same <strong class="blue-text">momentum</strong> input, same
+          <strong class="green-text">sign direction</strong>, different
+          <strong class="orange-text">graft magnitude</strong>.
+        </p>
+      </header>
+
+      <section class="coin-component-row" aria-label="Optimizer component decomposition">
+        <div class="component-card momentum-slot">
+          <span class="component-label">1. Momentum</span>
+          <strong>Nesterov matrix update</strong>
+          <div class="nesterov-bubble">
+            <span>Nesterov input</span>
+            \(U_t=(1-\mu)G_t+\mu m_t\)
+          </div>
+        </div>
+        <div class="component-card precondition-slot">
+          <span class="component-label">2. Preconditioning</span>
+          <strong>Direction only</strong>
+          <p>\(Q_t=\operatorname{sign}(U_t)\). Newton-Schulz and Shampoo \(\beta_2=0\) target the same polar factor.</p>
+        </div>
+        <div class="component-card graft-slot">
+          <span class="component-label">3. Grafting</span>
+          <strong>Magnitude only</strong>
+          <p>Square-root correction is \(a_\ell\) in \(\Delta W_\ell=-a_\ell Q_{t,\ell}\).</p>
+        </div>
+      </section>
+
+      <section class="coin-main-grid" aria-label="Comparison plot and side-by-side derivation">
+        <section class="coin-mini-plot" aria-label="Stylized optimizer validation curve comparison">
+          <h2>same direction, faster curve</h2>
+          <svg viewBox="0 0 340 238" role="img" aria-label="AdamW curve above Shampoo and Muon curves">
+            <g class="grid-lines">
+              <path d="M35 18H320M35 62H320M35 106H320M35 150H320M35 194H320"/>
+              <path d="M35 18V194M95 18V194M155 18V194M215 18V194M275 18V194"/>
+            </g>
+            <path class="axis" d="M35 18V194H320"/>
+            <path class="curve adam" d="M66 28 C83 68 96 101 122 130 C153 164 201 184 292 192"/>
+            <path class="curve shampoo" d="M55 27 C64 72 77 107 103 138 C138 176 191 191 229 192"/>
+            <path class="curve muon" d="M57 26 C66 71 78 106 105 137 C140 175 192 191 230 192"/>
+            <g class="legend">
+              <path class="adam" d="M184 32H208"/><text x="216" y="37">AdamW</text>
+              <path class="shampoo" d="M184 51H208"/><text x="216" y="56">Shampoo beta2=0</text>
+              <path class="muon" d="M184 70H208"/><text x="216" y="75">Muon same Q</text>
+            </g>
+            <text class="axis-label" x="122" y="226">training step</text>
+            <text class="axis-label rotate" x="-143" y="16">validation loss</text>
+          </svg>
+          <p>Green and red share \(Q_t\); grafting sets scale.</p>
+        </section>
+
+        <section class="coin-equation-grid" aria-label="Side-by-side optimizer derivation">
+          <div class="coin-equation-card ns-card">
+            <h2><span class="coin-pill green">preconditioning</span> Newton-Schulz / Muon</h2>
+            <div class="coin-math">
+              \[
+              \begin{aligned}
+              U_t &= A\Sigma B^\top\\
+              X_0 &= U_t/\|U_t\|_F\\
+              X_{k+1} &= \frac{1}{2}X_k(3I-X_k^\top X_k)\\
+              Q_t^{\rm NS} &\approx X_K\approx \operatorname{sign}(U_t)=AB^\top
+              \end{aligned}
+              \]
+            </div>
+          <p>
+            Multiplications approximate the polar factor; no inverse root in the inner loop.
+          </p>
+        </div>
+
+          <div class="coin-equation-card shampoo-card">
+            <h2><span class="coin-pill green">preconditioning</span> Shampoo, \(\beta_2=0\)</h2>
+            <div class="coin-math shampoo-math">
+              \[
+              \begin{aligned}
+              U_t &= A\Sigma B^\top\\
+              L_t &= U_tU_t^\top = A\Sigma^2A^\top\\
+              R_t &= U_t^\top U_t = B\Sigma^2B^\top\\
+              L_t^{-1/4}U_tR_t^{-1/4}
+                &= A\Sigma^{-1/2}A^\top A\Sigma B^\top B\Sigma^{-1/2}B^\top\\
+                &= AB^\top
+              \end{aligned}
+              \]
+            </div>
+          <p>
+            On the nonzero singular subspace, matrix Shampoo also returns \(AB^\top\).
+          </p>
+        </div>
+      </section>
+      </section>
+
+      <section class="coin-graft-strip" aria-label="Grafting difference">
+        <div class="coin-equality">
+          <h2><span class="coin-pill green">direction</span> Equal component</h2>
+          \[
+          Q_t^{\rm NS}\approx Q_t^{\rm Shampoo}(\beta_2=0)=\operatorname{sign}(U_t)=AB^\top.
+          \]
+        </div>
+        <div class="coin-scale-box">
+          <h2><span class="coin-pill orange">grafting</span> Different magnitude</h2>
+          <div class="coin-update-rule">
+            \[
+            \Delta W_\ell=-a_\ell Q_{t,\ell}
+            \]
+          </div>
+        </div>
+        <div class="coin-graft-choice">
+          <p><strong class="green-text">Shampoo:</strong> \(a_\ell=\eta\sqrt{N_\ell}\)</p>
+          <p><strong class="red-text">Muon:</strong> \(a_\ell=\eta\sqrt{\max(1,r_\ell/c_\ell)}\)</p>
+        </div>
+      </section>
+
+      <footer class="coin-actions">
+        <button id="coinContinue" class="coin-continue" type="button">continue to story</button>
+        <span>after 3 failed closes, the ill-conditioned x stabilizes</span>
+      </footer>
+    </article>
+  </div>
+
+  <div id="storyOverlay" class="story-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="storyTitle">
     <div class="story-frame">
       <div class="story-scene" aria-label="Pixel story scene">
         <div class="slop-cloud cloud-a"></div>
@@ -49,7 +174,7 @@
           <button class="pixel-button" id="storyNext" type="button">Next</button>
           <button class="pixel-button secondary" id="storySkip" type="button">Skip cutscene</button>
         </div>
-        <p id="audioStatus" class="audio-status">Press Next to wake the chiptune crystal.</p>
+        <p id="audioStatus" class="audio-status">The chiptune crystal wakes from the first click.</p>
       </div>
     </div>
   </div>
@@ -121,7 +246,8 @@
           <p>
             The sorcerer's first trick is to call every moving average "momentum." This vault
             separates the three spells: Nesterov lookahead, heavy-ball velocity, and EMA filtering.
-            Use Next Derivation to see the convex-rate argument one step at a time.
+            The rate plot uses the same stretched quadratic bowl so the condition number \(\kappa=L/\mu\)
+            becomes visible instead of abstract.
           </p>
         </div>
 
@@ -142,6 +268,30 @@
               <span><i class="swatch current"></i> current point</span>
               <span><i class="swatch lookahead"></i> lookahead / memory</span>
               <span><i class="swatch update"></i> next update</span>
+            </div>
+            <div class="rate-card" aria-labelledby="rateTitle">
+              <div class="rate-topline">
+                <div>
+                  <p class="eyebrow">Condition number trial</p>
+                  <h3 id="rateTitle">How kappa bends time</h3>
+                </div>
+                <strong id="kappaBadge">kappa=100</strong>
+              </div>
+              <canvas id="rateCanvas" width="720" height="240" aria-label="Convergence rate plot by condition number"></canvas>
+              <label class="kappa-control" for="kappaSlider">
+                <span>condition number kappa</span>
+                <input id="kappaSlider" type="range" min="0" max="3" step="0.01" value="2" aria-describedby="rateReadout">
+                <strong id="kappaValue">100</strong>
+              </label>
+              <div class="rate-legend" aria-label="Rate curve legend">
+                <span class="rate-chip gd">GD 1 - 1/kappa</span>
+                <span class="rate-chip nag">Nesterov 1 - 1/sqrt(kappa)</span>
+                <span class="rate-chip hb">Heavy-ball quadratic optimum</span>
+                <span class="rate-chip ema">EMA beta=.9 spectral radius</span>
+              </div>
+              <p id="rateReadout" class="rate-readout">
+                At kappa=100, accelerated methods trade kappa for sqrt(kappa); EMA mainly smooths gradients.
+              </p>
             </div>
           </div>
 

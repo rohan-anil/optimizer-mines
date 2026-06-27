@@ -12,6 +12,7 @@ const state = {
   momentumStep: 0,
   momentumTrace: [],
   momentumTick: 0,
+  kappaLog: 2,
   graftTick: 0,
   graftFormulaKey: "",
   forgeIndex: 0,
@@ -20,32 +21,37 @@ const state = {
   quizIndex: 0,
   quizAnswered: false,
   storyIndex: 0,
+  coinDodges: 0,
+  coinLastDodgeAt: 0,
   currentRoom: 0,
   music: {
     ctx: null,
     timer: null,
     step: 0,
     playing: false,
-    master: null
+    master: null,
+    wanted: false,
+    unlockArmed: false,
+    unlockHandler: null
   }
 };
 
 const storyPages = [
   {
     title: "The Slop Sorcerer",
-    text: "Slop has taken over the Kingdom of Optimizers. Every update rule has been smeared into vague vibes, every benchmark into a foggy screenshot, and the true optimizer is locked below the palace mines."
+    text: "Slop has taken over the Kingdom of Optimizers. Every update rule has been smeared into vibes, every benchmark into a foggy screenshot, and the true optimizer is locked below the palace mines."
+  },
+  {
+    title: "The Stretched Bowl Curse",
+    text: "The sorcerer's favorite spell stretches every loss bowl until one direction is steep, another is flat, and progress crawls. The curse has a name: condition number."
   },
   {
     title: "The Jailed Optimizer",
-    text: "In the deepest cell, the optimizer still remembers the old spells: momentum, grafting, weight decay, matrix directions, and honest convergence rates. But the evil sorcerer floods every corridor with slop."
-  },
-  {
-    title: "The Rescue Plan",
-    text: "You are the apprentice. You must learn the math, rebuild the update rules, and name each optimizer correctly. Every correct answer earns Cookie points and cracks a bar in the prison gate."
+    text: "In the deepest cell, the optimizer still remembers the old spells: Nesterov lookahead, heavy-ball velocity, EMA filtering, grafting, weight decay, matrix signs, and honest convergence rates."
   },
   {
     title: "Enter The Mines",
-    text: "The chiptune crystal wakes. The torches flare. Choose your chambers carefully: first momentum, then grafting, then decay, then the forge, then the naming trap."
+    text: "You are the apprentice. Read the rate plots, rebuild the update rules, and name each optimizer correctly. Every correct answer earns Cookie points and cracks a bar in the prison gate."
   }
 ];
 
@@ -94,7 +100,7 @@ const momentumLessons = {
   },
   heavyball: {
     title: "Heavy-ball Momentum",
-    rate: "rho = (sqrt(kappa)-1)/(sqrt(kappa)+1)",
+    rate: "quadratic rho = (sqrt(kappa)-1)/(sqrt(kappa)+1)",
     steps: [
       {
         cue: "velocity state",
@@ -123,8 +129,8 @@ const momentumLessons = {
       {
         cue: "condition number",
         text: "Writing kappa=L/mu gives the classic heavy-ball rate on strongly convex quadratics.",
-        math: "\\[\\rho=\\frac{\\sqrt\\kappa-1}{\\sqrt\\kappa+1}=1-\\frac{2}{\\sqrt\\kappa+1},\\qquad \\|e_k\\|=O(\\rho^k),\\quad f(x_k)-f^\\star=O(\\rho^{2k}).\\]",
-        note: "This is sharper than gradient descent on quadratics, whose slow factor is 1-1/kappa."
+        math: "\\[\\rho=\\frac{\\sqrt\\kappa-1}{\\sqrt\\kappa+1}=1-\\frac{2}{\\sqrt\\kappa+1},\\qquad \\|e_k\\|\\lesssim k\\rho^k,\\quad f(x_k)-f^\\star\\lesssim k^2\\rho^{2k}.\\]",
+        note: "The plotted heavy-ball curve is this quadratic optimum. It is faster than the Nesterov curve here, but it is not the same global theorem."
       },
       {
         cue: "convex warning",
@@ -503,6 +509,94 @@ function closeStory() {
   showRoom(0);
 }
 
+function closeCoinPopup() {
+  const popup = $("#coinPopup");
+  if (!popup) return;
+  popup.classList.add("hidden");
+  const story = $("#storyOverlay");
+  if (story) {
+    story.classList.remove("hidden");
+    renderStory();
+  }
+}
+
+function moveCoinClose() {
+  const popup = $("#coinPopup");
+  const paper = popup?.querySelector(".coin-paper");
+  const close = $("#coinClose");
+  const hint = $("#coinCloseHint");
+  if (!popup || !paper || !close || popup.classList.contains("hidden")) return;
+  if (state.coinDodges >= 3) {
+    close.classList.add("catchable");
+    close.textContent = "ok";
+    close.setAttribute("aria-label", "Close derivation popup");
+    return;
+  }
+  const now = performance.now();
+  if (now - state.coinLastDodgeAt < 350) return;
+  state.coinLastDodgeAt = now;
+  state.coinDodges += 1;
+  const paperRect = paper.getBoundingClientRect();
+  const closeRect = close.getBoundingClientRect();
+  const pad = 14;
+  const maxX = Math.max(pad, paperRect.width - closeRect.width - pad);
+  const maxY = Math.max(pad, Math.min(170, paperRect.height - closeRect.height - pad));
+  const x = pad + Math.random() * (maxX - pad);
+  const y = pad + Math.random() * (maxY - pad);
+  close.style.left = `${x}px`;
+  close.style.top = `${y}px`;
+  close.style.right = "auto";
+  if (hint) {
+    const hintWidth = hint.getBoundingClientRect().width || 190;
+    const hintX = x + closeRect.width + 9 + hintWidth < paperRect.width - pad
+      ? x + closeRect.width + 9
+      : Math.max(pad, x - hintWidth - 9);
+    hint.style.left = `${hintX}px`;
+    hint.style.top = `${y + 7}px`;
+    hint.style.right = "auto";
+  }
+  close.classList.add("evading");
+  window.setTimeout(() => close.classList.remove("evading"), 170);
+  if (state.coinDodges >= 3) {
+    window.setTimeout(() => {
+      close.classList.add("catchable");
+      close.textContent = "ok";
+      close.setAttribute("aria-label", "Close derivation popup");
+    }, 210);
+  }
+}
+
+function setupCoinPopup() {
+  const popup = $("#coinPopup");
+  const close = $("#coinClose");
+  const paper = popup?.querySelector(".coin-paper");
+  const continueButton = $("#coinContinue");
+  if (!popup || !close || !paper || !continueButton) return;
+
+  close.addEventListener("pointerenter", moveCoinClose);
+  close.addEventListener("click", () => {
+    closeCoinPopup();
+    playBlip("good");
+  });
+  continueButton.addEventListener("click", () => {
+    closeCoinPopup();
+    playBlip("good");
+  });
+  paper.addEventListener("pointermove", (event) => {
+    if (popup.classList.contains("hidden")) return;
+    const rect = close.getBoundingClientRect();
+    const closeX = rect.left + rect.width / 2;
+    const closeY = rect.top + rect.height / 2;
+    const distance = Math.hypot(event.clientX - closeX, event.clientY - closeY);
+    if (distance < 82) moveCoinClose();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !popup.classList.contains("hidden")) {
+      closeCoinPopup();
+    }
+  });
+}
+
 function setupStory() {
   renderStory();
   $("#storyNext").addEventListener("click", () => {
@@ -740,10 +834,130 @@ function drawMomentum() {
   $("#simLoss").textContent = `loss ${lossValue.toFixed(4)}`;
 }
 
+function currentKappa() {
+  const slider = $("#kappaSlider");
+  const logValue = slider ? Number(slider.value) : state.kappaLog;
+  state.kappaLog = Number.isFinite(logValue) ? logValue : 2;
+  return Math.max(1, Math.round(10 ** state.kappaLog));
+}
+
+function emaSpectralRadius(kappa, beta = 0.9) {
+  let worst = 0;
+  for (let i = 0; i <= 96; i += 1) {
+    const lambdaOverL = (1 / kappa) + (i / 96) * (1 - 1 / kappa);
+    const a = 1 + beta - (1 - beta) * lambdaOverL;
+    const discriminant = a * a - 4 * beta;
+    let radius;
+    if (discriminant >= 0) {
+      const root = Math.sqrt(discriminant);
+      radius = Math.max(Math.abs((a + root) / 2), Math.abs((a - root) / 2));
+    } else {
+      radius = Math.sqrt(beta);
+    }
+    worst = Math.max(worst, radius);
+  }
+  return Math.min(0.9999, worst);
+}
+
+function rateFactors(kappa) {
+  const rootKappa = Math.sqrt(kappa);
+  return {
+    gd: Math.max(0, 1 - 1 / kappa),
+    nag: Math.max(0, 1 - 1 / rootKappa),
+    hb: Math.max(0, (rootKappa - 1) / (rootKappa + 1)),
+    ema: emaSpectralRadius(kappa)
+  };
+}
+
+function drawRateCurve(ctx, factor, color, area, maxStep, dash = []) {
+  const floor = 1e-4;
+  const logFloor = Math.log10(floor);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4;
+  ctx.setLineDash(dash);
+  ctx.beginPath();
+  for (let step = 0; step <= maxStep; step += 1) {
+    const error = step === 0 ? 1 : Math.max(floor, factor ** step);
+    const logError = Math.log10(error);
+    const x = area.left + (step / maxStep) * area.width;
+    const y = area.top + ((0 - logError) / (0 - logFloor)) * area.height;
+    if (step === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawRatePlot() {
+  const canvas = $("#rateCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+  const kappa = currentKappa();
+  const factors = rateFactors(kappa);
+  const maxStep = 160;
+  const area = { left: 64, top: 22, width: w - 96, height: h - 78 };
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#090914";
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.strokeStyle = "#1d2542";
+  ctx.lineWidth = 2;
+  for (let i = 0; i <= 4; i += 1) {
+    const y = area.top + (i / 4) * area.height;
+    ctx.beginPath();
+    ctx.moveTo(area.left, y);
+    ctx.lineTo(area.left + area.width, y);
+    ctx.stroke();
+  }
+  for (let i = 0; i <= 4; i += 1) {
+    const x = area.left + (i / 4) * area.width;
+    ctx.beginPath();
+    ctx.moveTo(x, area.top);
+    ctx.lineTo(x, area.top + area.height);
+    ctx.stroke();
+  }
+
+  drawRateCurve(ctx, factors.gd, "#367cf6", area, maxStep);
+  drawRateCurve(ctx, factors.nag, "#20c6b7", area, maxStep);
+  drawRateCurve(ctx, factors.hb, "#f04872", area, maxStep, [10, 7]);
+  drawRateCurve(ctx, factors.ema, "#58d66d", area, maxStep);
+
+  ctx.strokeStyle = "#53405b";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(area.left, area.top);
+  ctx.lineTo(area.left, area.top + area.height);
+  ctx.lineTo(area.left + area.width, area.top + area.height);
+  ctx.stroke();
+
+  ctx.fillStyle = "#d4bc8c";
+  ctx.font = "15px Courier New";
+  ctx.fillText("mode error, log scale", 16, 18);
+  ctx.fillText("training steps", area.left + area.width - 140, h - 18);
+  ["1", "1e-1", "1e-2", "1e-3", "1e-4"].forEach((label, i) => {
+    const y = area.top + (i / 4) * area.height + 5;
+    ctx.fillText(label, 12, y);
+  });
+  [0, 40, 80, 120, 160].forEach((step, i) => {
+    const x = area.left + (i / 4) * area.width - 8;
+    ctx.fillText(String(step), x, h - 42);
+  });
+
+  $("#kappaValue").textContent = String(kappa);
+  $("#kappaBadge").textContent = `kappa=${kappa}`;
+  $("#rateReadout").textContent =
+    `Mode-error factors at kappa=${kappa}: GD ${factors.gd.toFixed(3)}, Nesterov ${factors.nag.toFixed(3)}, ` +
+    `heavy-ball quadratic-only ${factors.hb.toFixed(3)}, EMA beta=0.9 ${factors.ema.toFixed(3)}. Smaller is faster.`;
+}
+
 function momentumLoop() {
   state.momentumTick += 1;
   if (state.momentumTick % 15 === 0) stepMomentum();
   drawMomentum();
+  drawRatePlot();
   requestAnimationFrame(momentumLoop);
 }
 
@@ -1153,9 +1367,14 @@ function setupMomentumControls() {
     ensureMusic();
     prevMomentumStep();
   });
+  $("#kappaSlider").addEventListener("input", () => {
+    ensureMusic();
+    drawRatePlot();
+  });
   resetMomentum("nesterov");
   $("#simRate").textContent = momentumLessons.nesterov.rate;
   renderMomentumLesson();
+  drawRatePlot();
   requestAnimationFrame(momentumLoop);
 }
 
@@ -1211,7 +1430,7 @@ function playNoise(time) {
 
 function musicStep() {
   const audio = state.music;
-  if (!audio.playing || !audio.ctx) return;
+  if (!audio.playing || !audio.ctx || audio.ctx.state !== "running") return;
   const scale = [196, 220, 233.08, 261.63, 293.66, 311.13, 349.23, 392];
   const melody = [0, 2, 3, 5, 7, 5, 3, 2, 0, 2, 5, 3, 2, 0, 3, 2];
   const bass = [0, 0, 0, 0, 5, 5, 5, 5, 3, 3, 3, 3, 2, 2, 2, 2];
@@ -1223,45 +1442,104 @@ function musicStep() {
   audio.step += 1;
 }
 
-function startMusic() {
+function setupAudioContext() {
   const audio = state.music;
-  if (audio.playing) return;
   if (!audio.ctx) {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    audio.ctx = new AudioContext();
+    if (!AudioContext) return false;
+    try {
+      audio.ctx = new AudioContext();
+    } catch (_error) {
+      updateMusicUi("Click anywhere to wake the chiptune crystal.");
+      return false;
+    }
     audio.master = audio.ctx.createGain();
     audio.master.gain.value = 0.28;
     audio.master.connect(audio.ctx.destination);
   }
-  if (audio.ctx.state === "suspended") audio.ctx.resume();
-  audio.playing = true;
-  $("#musicToggle").textContent = "Stop music";
+  return true;
+}
+
+function updateMusicUi(statusText) {
+  const toggle = $("#musicToggle");
+  if (toggle) toggle.textContent = state.music.wanted ? "Stop music" : "Start music";
   const status = $("#audioStatus");
-  if (status) status.textContent = "Music crystal active.";
-  musicStep();
-  audio.timer = window.setInterval(musicStep, 150);
+  if (status && statusText) status.textContent = statusText;
+}
+
+function beginMusicPlayback() {
+  const audio = state.music;
+  if (!audio.wanted || !audio.ctx || audio.ctx.state !== "running") return;
+  const wasPlaying = audio.playing;
+  audio.playing = true;
+  updateMusicUi("Music crystal active.");
+  if (!wasPlaying) musicStep();
+  if (!audio.timer) audio.timer = window.setInterval(musicStep, 150);
+}
+
+function armMusicUnlock() {
+  const audio = state.music;
+  if (audio.unlockArmed) return;
+  audio.unlockArmed = true;
+  audio.unlockHandler = () => {
+    if (!state.music.wanted) return;
+    startMusic();
+    if (state.music.playing && state.music.unlockHandler) {
+      ["pointerdown", "click", "keydown", "touchstart"].forEach((eventName) => {
+        document.removeEventListener(eventName, state.music.unlockHandler, true);
+      });
+      state.music.unlockArmed = false;
+      state.music.unlockHandler = null;
+    }
+  };
+  ["pointerdown", "click", "keydown", "touchstart"].forEach((eventName) => {
+    document.addEventListener(eventName, audio.unlockHandler, true);
+  });
+}
+
+function startMusic() {
+  const audio = state.music;
+  audio.wanted = true;
+  updateMusicUi("Music crystal waking. Click anywhere if the browser guards the gate.");
+  armMusicUnlock();
+  if (!setupAudioContext()) return;
+  if (audio.ctx.state === "suspended") {
+    let resume;
+    try {
+      resume = audio.ctx.resume();
+    } catch (_error) {
+      updateMusicUi("Click anywhere to wake the chiptune crystal.");
+      return;
+    }
+    if (resume && typeof resume.then === "function") {
+      resume.then(beginMusicPlayback).catch(() => {
+        updateMusicUi("Click anywhere to wake the chiptune crystal.");
+      });
+    }
+    return;
+  }
+  beginMusicPlayback();
 }
 
 function stopMusic() {
   const audio = state.music;
+  audio.wanted = false;
   audio.playing = false;
   if (audio.timer) window.clearInterval(audio.timer);
   audio.timer = null;
-  $("#musicToggle").textContent = "Start music";
-  const status = $("#audioStatus");
-  if (status) status.textContent = "Music crystal sleeping.";
+  updateMusicUi("Music crystal sleeping.");
 }
 
 function ensureMusic() {
-  if (!state.music.playing) startMusic();
+  if (!state.music.playing || !state.music.wanted) startMusic();
 }
 
 function setupMusic() {
   $("#musicToggle").addEventListener("click", () => {
-    if (state.music.playing) stopMusic();
+    if (state.music.wanted) stopMusic();
     else startMusic();
   });
+  startMusic();
 }
 
 function setupReset() {
@@ -1277,6 +1555,7 @@ function setupReset() {
 function setup() {
   saveScore();
   setupMusic();
+  setupCoinPopup();
   setupStory();
   setupRoomFlow();
   setupReset();

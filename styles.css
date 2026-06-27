@@ -99,6 +99,694 @@ a {
   margin: 0 auto 44px;
 }
 
+.coin-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.24), transparent 34%),
+    rgba(6, 5, 10, 0.48);
+  backdrop-filter: blur(1.5px);
+  color: #111;
+}
+
+.coin-popup.hidden {
+  display: none;
+}
+
+.coin-paper {
+  position: relative;
+  width: min(1180px, calc(100vw - 18px));
+  height: auto;
+  max-height: calc(100vh - 16px);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto auto auto auto;
+  gap: 8px;
+  padding: 10px;
+  border: 3px solid #111;
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.045) 1px, transparent 1px) 0 0 / 74px 74px,
+    linear-gradient(0deg, rgba(0,0,0,0.035) 1px, transparent 1px) 0 0 / 74px 74px,
+    #fff;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.36), 7px 7px 0 rgba(0, 0, 0, 0.85);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.coin-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  z-index: 3;
+  border: 2px solid #111;
+  border-radius: 999px;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  font: 700 18px/1 Arial, sans-serif;
+  box-shadow: 3px 3px 0 #111;
+  transition: left 130ms ease, top 130ms ease, transform 130ms ease;
+}
+
+.coin-close-hint {
+  position: absolute;
+  top: 16px;
+  right: 50px;
+  z-index: 2;
+  padding: 4px 7px;
+  border: 1px solid #111;
+  border-radius: 999px;
+  background: #fff7d8;
+  color: #111;
+  font: 800 10px/1 Arial, sans-serif;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.22);
+  transition: left 130ms ease, top 130ms ease;
+}
+
+.coin-close.evading {
+  transform: rotate(12deg);
+}
+
+.coin-close.catchable {
+  background: #111;
+  color: #fff;
+}
+
+.coin-header {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.coin-kicker {
+  margin: 0 0 1px;
+  color: #ca422c;
+  font: 700 11px/1.2 Arial, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.coin-header h1 {
+  margin: 0;
+  color: #111;
+  font-size: clamp(22px, 2.35vw, 32px);
+  font-weight: 800;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.coin-header p {
+  margin: 3px auto 0;
+  max-width: 900px;
+  color: #222;
+  font-size: clamp(12px, 0.98vw, 15px);
+  line-height: 1.16;
+  font-weight: 650;
+}
+
+.coin-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.68fr) minmax(520px, 1.32fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.coin-components,
+.coin-component-row,
+.coin-main-grid,
+.coin-mini-plot,
+.coin-equation-card,
+.coin-graft-strip,
+.coin-plot,
+.coin-shared,
+.coin-card,
+.coin-proof {
+  border: 2px solid #111;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.coin-component-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  min-height: 108px;
+  overflow: visible;
+}
+
+.coin-main-grid {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.52fr) minmax(620px, 1.48fr);
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+  align-items: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.coin-mini-plot {
+  min-height: 0;
+  padding: 7px 8px;
+  overflow: hidden;
+}
+
+.coin-mini-plot h2 {
+  margin: 0;
+  color: #111;
+  font-size: clamp(14px, 1.08vw, 18px);
+  font-weight: 900;
+  text-align: center;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.coin-mini-plot svg {
+  display: block;
+  width: 100%;
+  max-height: 172px;
+  margin-top: 2px;
+}
+
+.coin-mini-plot p {
+  margin: 5px 0 0;
+  color: #222;
+  font: 800 11px/1.15 Arial, sans-serif;
+}
+
+.coin-components {
+  padding: 14px;
+}
+
+.coin-components h2 {
+  margin: 0 0 12px;
+  color: #111;
+  font-size: clamp(18px, 1.55vw, 24px);
+  font-weight: 900;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.component-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.component-card {
+  position: relative;
+  min-height: 0;
+  padding: 9px 10px 8px 13px;
+  border: 2px solid #111;
+  background: #fff;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.18);
+}
+
+.component-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 7px;
+}
+
+.momentum-slot::before {
+  background: #2777b5;
+}
+
+.precondition-slot::before {
+  background: #27864f;
+}
+
+.graft-slot::before {
+  background: #d98b25;
+}
+
+.component-label,
+.coin-tag,
+.coin-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  font-family: Arial, sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.component-label {
+  margin-bottom: 3px;
+  padding: 2px 6px;
+  color: #fff;
+  background: #111;
+  font-size: 9px;
+}
+
+.component-card strong {
+  display: block;
+  color: #111;
+  font-size: 14px;
+  line-height: 1.15;
+}
+
+.component-card p {
+  margin: 4px 0 0;
+  color: #222;
+  font: 750 11.5px/1.18 Arial, sans-serif;
+}
+
+.nesterov-bubble {
+  position: relative;
+  margin-top: 4px;
+  padding: 6px 7px 4px;
+  border: 2px solid #2777b5;
+  border-radius: 10px;
+  background: #edf7ff;
+  color: #111;
+}
+
+.nesterov-bubble::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  top: -8px;
+  width: 13px;
+  height: 13px;
+  border-left: 2px solid #2777b5;
+  border-top: 2px solid #2777b5;
+  background: #edf7ff;
+  transform: rotate(45deg);
+}
+
+.nesterov-bubble span {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-bottom: 2px;
+  color: #155f9a;
+  font: 900 9px/1.1 Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.nesterov-bubble .MathJax {
+  position: relative;
+  z-index: 1;
+}
+
+.coin-plot {
+  min-height: 300px;
+  padding: 14px 14px 10px;
+}
+
+.coin-plot h2,
+.coin-shared h2,
+.coin-card h2,
+.coin-proof h2,
+.coin-equality h3,
+.coin-scale-box h3 {
+  margin: 0;
+  color: #111;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.coin-plot h2 {
+  text-align: center;
+  font-size: clamp(18px, 1.55vw, 24px);
+}
+
+.coin-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 8px;
+}
+
+.grid-lines path {
+  fill: none;
+  stroke: #d8d8d8;
+  stroke-width: 1.4;
+}
+
+.axis {
+  fill: none;
+  stroke: #222;
+  stroke-width: 1.8;
+}
+
+.curve {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.curve.adam,
+.legend .adam {
+  stroke: #1f77b4;
+}
+
+.curve.shampoo,
+.legend .shampoo {
+  stroke: #3ca25f;
+}
+
+.curve.muon,
+.legend .muon {
+  stroke: #c9472f;
+}
+
+.legend text,
+.axis-label {
+  fill: #111;
+  font: 13px Georgia, "Times New Roman", serif;
+}
+
+.axis-label.rotate {
+  transform: rotate(-90deg);
+}
+
+.coin-derivation {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.coin-equation-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+  align-items: start;
+}
+
+.coin-equation-card {
+  min-height: 0;
+  padding: 10px;
+  overflow: hidden;
+  align-self: start;
+}
+
+.coin-equation-card h2 {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin: 0;
+  color: #111;
+  font-size: clamp(15px, 1.15vw, 19px);
+  font-weight: 900;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.coin-shared {
+  grid-column: 1 / -1;
+  padding: 14px 18px;
+  background:
+    linear-gradient(90deg, rgba(39, 119, 181, 0.17), rgba(60, 162, 95, 0.10)),
+    #fff;
+}
+
+.coin-shared h2 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: clamp(18px, 1.45vw, 24px);
+}
+
+.coin-shared .coin-math {
+  margin-top: 2px;
+}
+
+.coin-card {
+  min-height: 260px;
+  padding: clamp(14px, 1.25vw, 19px);
+}
+
+.coin-card h2 {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  font-size: clamp(18px, 1.55vw, 25px);
+}
+
+.coin-card h2 span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font: 800 15px/1 Arial, sans-serif;
+}
+
+.coin-tag {
+  margin: 8px 0 0;
+  padding: 5px 9px;
+  color: #fff;
+  font-size: 10px;
+}
+
+.green-bg {
+  background: #27864f;
+}
+
+.coin-pill {
+  padding: 4px 6px;
+  color: #fff;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.coin-pill.blue {
+  background: #2777b5;
+}
+
+.coin-pill.green {
+  background: #27864f;
+}
+
+.coin-pill.orange {
+  background: #d98b25;
+}
+
+.coin-card p {
+  margin: 8px 0 0;
+  color: #333;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.coin-equation-card p {
+  margin: 5px 0 0;
+  color: #333;
+  font: 750 13px/1.22 Arial, sans-serif;
+}
+
+.coin-math {
+  margin-top: 2px;
+  color: #111;
+  font-size: clamp(14px, 1.08vw, 17.5px);
+  line-height: 1.06;
+}
+
+.coin-equation-card .coin-math {
+  font-size: clamp(18px, 1.38vw, 23px);
+  line-height: 1.15;
+}
+
+.shampoo-math {
+  font-size: clamp(15.5px, 1.18vw, 19.5px);
+}
+
+.coin-paper mjx-container[display="true"] {
+  margin: 0.08em 0 !important;
+}
+
+.coin-paper mjx-container {
+  max-width: 100%;
+  font-size: 104% !important;
+}
+
+.shampoo-math mjx-container {
+  font-size: 98% !important;
+}
+
+.coin-proof {
+  margin-top: 16px;
+  padding: clamp(14px, 1.45vw, 22px);
+}
+
+.coin-proof h2 {
+  font-size: clamp(22px, 2vw, 32px);
+}
+
+.coin-proof-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) minmax(300px, 0.78fr);
+  gap: 18px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.coin-equality {
+  color: #111;
+}
+
+.coin-equality h3 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 20px;
+}
+
+.coin-equality p {
+  margin: 8px 0 0;
+  color: #333;
+  font: 700 15px/1.35 Arial, sans-serif;
+}
+
+.coin-scale-box {
+  border-left: 4px solid #111;
+  padding-left: 18px;
+  color: #111;
+}
+
+.coin-scale-box h3 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 20px;
+}
+
+.coin-scale-box p {
+  margin: 8px 0 0;
+  font-size: 16px;
+  line-height: 1.38;
+  font-weight: 650;
+}
+
+.coin-graft-strip {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(190px, 0.52fr) minmax(300px, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  overflow: hidden;
+}
+
+.coin-graft-strip h2 {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  margin: 0 0 3px;
+  color: #111;
+  font-size: clamp(12px, 0.95vw, 16px);
+  font-weight: 900;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.coin-graft-strip .coin-equality,
+.coin-graft-strip .coin-scale-box,
+.coin-graft-choice {
+  min-width: 0;
+}
+
+.coin-graft-strip .coin-equality {
+  color: #111;
+}
+
+.coin-graft-strip .coin-scale-box {
+  border-left: 3px solid #d98b25;
+  padding-left: 9px;
+}
+
+.coin-graft-choice {
+  display: grid;
+  gap: 4px;
+}
+
+.coin-graft-choice p {
+  margin: 0;
+  padding: 5px 7px;
+  border: 1px solid #111;
+  background: #fff;
+  color: #222;
+  font: 800 10.5px/1.1 Arial, sans-serif;
+}
+
+.green-text {
+  color: #27864f;
+}
+
+.red-text {
+  color: #c9472f;
+}
+
+.blue-text {
+  color: #2777b5;
+}
+
+.orange-text {
+  color: #d98b25;
+}
+
+.coin-update-rule {
+  width: fit-content;
+  margin: 0;
+  padding: 4px 7px;
+  border: 2px solid #111;
+  background: #fff7d8;
+  box-shadow: 3px 3px 0 rgba(217, 139, 37, 0.35);
+  font-size: 15px;
+}
+
+.coin-bottom-line {
+  display: inline-block;
+  padding: 8px 10px;
+  border: 2px solid #111;
+  background: #fff4b8;
+}
+
+.coin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  align-items: center;
+  margin-top: 0;
+  font-family: Arial, sans-serif;
+}
+
+.coin-continue {
+  border: 2px solid #111;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+  font: 700 12px/1 Arial, sans-serif;
+  text-transform: uppercase;
+  box-shadow: 3px 3px 0 #999;
+}
+
+.coin-actions span {
+  color: #555;
+  font-size: 10.5px;
+}
+
 .story-overlay {
   position: fixed;
   inset: 0;
@@ -802,6 +1490,7 @@ h3 {
 }
 
 .sim-panel,
+.rate-card,
 .viz-panel,
 .graft-controls,
 .rule-console,
@@ -821,6 +1510,7 @@ h3 {
 }
 
 .sim-panel,
+.rate-card,
 .viz-panel,
 .graft-controls,
 .rule-console,
@@ -829,6 +1519,95 @@ h3 {
 .rate-scroll article,
 .math-tile {
   padding: 16px;
+}
+
+.rate-card {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.rate-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: start;
+}
+
+.rate-topline .eyebrow {
+  margin-bottom: 5px;
+}
+
+.rate-topline h3 {
+  margin: 0;
+  font-size: clamp(24px, 2.4vw, 36px);
+}
+
+.rate-topline strong {
+  padding: 8px 10px;
+  border: 3px solid #080711;
+  outline: 2px solid var(--line);
+  color: var(--teal);
+  background: #21182a;
+  box-shadow: 3px 3px 0 #080711;
+  font: 700 14px/1 var(--font-pixel);
+  white-space: nowrap;
+}
+
+.kappa-control {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  color: #fff0c2;
+  font: 700 12px/1.2 var(--font-pixel);
+  text-transform: uppercase;
+}
+
+.kappa-control input {
+  min-width: 0;
+}
+
+.kappa-control strong {
+  color: var(--gold);
+}
+
+.rate-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rate-chip {
+  min-width: 0;
+  padding: 7px 8px;
+  border: 3px solid #080711;
+  color: #fff4c6;
+  background: #1c1628;
+  font: 700 10px/1.2 var(--font-pixel);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.rate-chip.gd {
+  box-shadow: inset 6px 0 0 var(--blue);
+}
+
+.rate-chip.nag {
+  box-shadow: inset 6px 0 0 var(--teal);
+}
+
+.rate-chip.hb {
+  box-shadow: inset 6px 0 0 var(--pink);
+}
+
+.rate-chip.ema {
+  box-shadow: inset 6px 0 0 var(--green);
+}
+
+.rate-readout {
+  color: #f3dfba;
+  font-weight: 800;
 }
 
 canvas {
@@ -1567,6 +2346,30 @@ input[type="range"] {
 }
 
 @media (max-width: 980px) {
+  .coin-paper {
+    height: min(94vh, 900px);
+    overflow: auto;
+  }
+
+  .coin-component-row,
+  .coin-main-grid,
+  .coin-equation-grid,
+  .coin-graft-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .coin-layout,
+  .coin-derivation,
+  .coin-proof-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .coin-scale-box {
+    border-left: 0;
+    border-top: 3px solid #111;
+    padding: 16px 0 0;
+  }
+
   .story-frame {
     grid-template-columns: 1fr;
   }
@@ -1581,6 +2384,11 @@ input[type="range"] {
 
   .room-nav {
     position: static;
+    grid-template-columns: 1fr;
+  }
+
+  .kappa-control,
+  .rate-legend {
     grid-template-columns: 1fr;
   }
 
@@ -1619,6 +2427,51 @@ input[type="range"] {
 }
 
 @media (max-width: 560px) {
+  .coin-popup {
+    padding: 10px;
+  }
+
+  .coin-paper {
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+    padding: 54px 14px 18px;
+  }
+
+  .coin-close {
+    width: 34px;
+    height: 34px;
+  }
+
+  .coin-header h1 {
+    font-size: 30px;
+  }
+
+  .coin-plot,
+  .coin-mini-plot,
+  .coin-equation-card,
+  .coin-graft-strip,
+  .coin-card,
+  .coin-proof {
+    padding: 12px;
+  }
+
+  .coin-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .coin-continue {
+    width: 100%;
+  }
+
+  .rate-topline {
+    display: grid;
+  }
+
+  .kappa-control {
+    gap: 8px;
+  }
+
   .story-overlay {
     padding: 12px;
   }
@@ -1695,5 +2548,69 @@ input[type="range"] {
 
   .torch-right {
     right: 27%;
+  }
+}
+
+@media (min-width: 981px) and (max-height: 760px) {
+  .coin-popup {
+    padding: 10px;
+  }
+
+  .coin-paper {
+    width: min(1220px, calc(100vw - 24px));
+    height: calc(100vh - 20px);
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .coin-kicker,
+  .coin-mini-plot p,
+  .coin-equation-card p,
+  .component-card p,
+  .coin-actions span {
+    display: none;
+  }
+
+  .coin-header h1 {
+    font-size: clamp(22px, 2.35vw, 32px);
+  }
+
+  .coin-header p {
+    margin-top: 3px;
+    font-size: 13px;
+  }
+
+  .component-card {
+    padding: 7px 8px 6px 12px;
+  }
+
+  .nesterov-bubble {
+    margin-top: 4px;
+    padding: 5px 6px 2px;
+  }
+
+  .coin-mini-plot svg {
+    max-height: 210px;
+  }
+
+  .coin-math {
+    font-size: clamp(12px, 0.92vw, 15px);
+  }
+
+  .coin-equation-card .coin-math {
+    font-size: clamp(14px, 1.05vw, 17px);
+  }
+
+  .shampoo-math {
+    font-size: clamp(12.5px, 0.96vw, 15.5px);
+  }
+
+  .coin-graft-choice p {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+
+  .coin-continue {
+    padding: 7px 12px;
   }
 }
