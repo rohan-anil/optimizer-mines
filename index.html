@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Optimizer Mines</title>
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]],
+        processEscapes: true
+      },
+      chtml: { matchFontHeight: false },
+      options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre"] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <script defer src="game.js"></script>
+</head>
+<body>
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="stars" aria-hidden="true"></div>
+
+  <div id="storyOverlay" class="story-overlay" role="dialog" aria-modal="true" aria-labelledby="storyTitle">
+    <div class="story-frame">
+      <div class="story-scene" aria-label="Pixel story scene">
+        <div class="slop-cloud cloud-a"></div>
+        <div class="slop-cloud cloud-b"></div>
+        <div class="sorcerer" aria-hidden="true"></div>
+        <div class="prison">
+          <div class="prison-bars"></div>
+          <div class="optimizer-orb"></div>
+        </div>
+        <div class="story-floor"></div>
+      </div>
+      <div class="story-copy">
+        <p class="eyebrow">Opening cutscene</p>
+        <h1 id="storyTitle">The Slop Sorcerer</h1>
+        <p id="storyText">
+          Slop has taken over the Kingdom of Optimizers. Every update rule has been smeared into
+          vague vibes, every benchmark into a foggy screenshot, and the true optimizer is locked
+          below the palace mines.
+        </p>
+        <div id="storyProgress" class="story-progress" aria-label="Story progress"></div>
+        <div class="story-actions">
+          <button class="pixel-button secondary" id="storyBack" type="button">Back</button>
+          <button class="pixel-button" id="storyNext" type="button">Next</button>
+          <button class="pixel-button secondary" id="storySkip" type="button">Skip cutscene</button>
+        </div>
+        <p id="audioStatus" class="audio-status">Press Next to wake the chiptune crystal.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="game-shell">
+    <header class="hud" aria-label="Game status">
+      <a class="brand" href="#top" aria-label="Optimizer Mines home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Optimizer Mines</span>
+      </a>
+      <div class="hud-stats">
+        <div class="meter">
+          <span class="meter-label">Cookie points</span>
+          <strong id="cookieScore">0</strong>
+        </div>
+        <div class="meter">
+          <span class="meter-label">Chamber</span>
+          <strong id="roomName">Gate</strong>
+        </div>
+      </div>
+      <div class="hud-actions">
+        <button class="pixel-button" id="musicToggle" type="button">Start music</button>
+        <button class="pixel-button secondary" id="resetGame" type="button">Reset</button>
+      </div>
+    </header>
+
+    <nav class="room-nav" aria-label="Chamber navigation">
+      <button class="pixel-button secondary" type="button" id="prevRoom">Prev</button>
+      <div id="roomDots" class="room-dots" aria-label="Chamber progress"></div>
+      <button class="pixel-button" type="button" id="nextRoom">Next</button>
+    </nav>
+
+    <main id="top">
+      <section class="hero room-band room-screen active" data-room="Gate" aria-labelledby="heroTitle">
+        <div class="hero-copy">
+          <p class="eyebrow">8-bit optimizer dungeon</p>
+          <h1 id="heroTitle">Optimizer Mines</h1>
+          <p class="lede">
+            The true optimizer is jailed under the palace. Enter the mines, learn the math,
+            forge update rules, and break the Kingdom of Optimizers free from slop.
+          </p>
+          <div class="quick-actions" aria-label="Jump to game sections">
+            <button class="pixel-button" type="button" data-go-room="1">Enter momentum vault</button>
+            <button class="pixel-button secondary" type="button" data-go-room="4">Forge an optimizer</button>
+            <button class="pixel-button secondary" type="button" data-go-room="5">Name the variant</button>
+          </div>
+        </div>
+        <div class="palace-scene" aria-label="Retro palace mine scene">
+          <div class="moon"></div>
+          <div class="tower tower-left"></div>
+          <div class="tower tower-right"></div>
+          <div class="gate">
+            <div class="gate-bars"></div>
+          </div>
+          <div class="hero-runner" aria-hidden="true"></div>
+          <div class="torch torch-left"></div>
+          <div class="torch torch-right"></div>
+          <div class="floor"></div>
+        </div>
+        <div class="room-actions">
+          <button class="pixel-button" type="button" data-next-room>Next: momentum vault</button>
+        </div>
+      </section>
+
+      <section id="momentum" class="room-band room-screen" data-room="Momentum" aria-labelledby="momentumTitle">
+        <div class="section-head">
+          <p class="eyebrow">Chamber 1</p>
+          <h2 id="momentumTitle">Momentum Training Room</h2>
+          <p>
+            The sorcerer's first trick is to call every moving average "momentum." This vault
+            separates the three spells: Nesterov lookahead, heavy-ball velocity, and EMA filtering.
+            Use Next Derivation to see the convex-rate argument one step at a time.
+          </p>
+        </div>
+
+        <div class="momentum-layout">
+          <div class="sim-panel">
+            <div class="sim-toolbar" role="group" aria-label="Momentum simulation mode">
+              <button class="mode-button active" type="button" data-momentum="nesterov">Nesterov</button>
+              <button class="mode-button" type="button" data-momentum="heavyball">Heavy-ball</button>
+              <button class="mode-button" type="button" data-momentum="ema">EMA</button>
+            </div>
+            <canvas id="momentumCanvas" width="720" height="360" aria-label="Convex bowl optimizer simulation"></canvas>
+            <div class="sim-readout">
+              <span id="simMode">Nesterov</span>
+              <span id="simLoss">loss 0.0000</span>
+              <span id="simRate">rate 1 - 1/sqrt(kappa)</span>
+            </div>
+            <div class="sim-legend">
+              <span><i class="swatch current"></i> current point</span>
+              <span><i class="swatch lookahead"></i> lookahead / memory</span>
+              <span><i class="swatch update"></i> next update</span>
+            </div>
+          </div>
+
+          <div class="math-stack momentum-teacher">
+            <div class="teacher-card">
+              <div class="teacher-topline">
+                <h3 id="momentumLessonTitle">Nesterov Momentum</h3>
+                <span id="momentumStepLabel">Step 1 / 6</span>
+              </div>
+              <p id="momentumLessonText">
+                Start with the simplest ill-conditioned bowl: one slow direction with curvature
+                \(\mu\) and one fast direction with curvature \(L\).
+              </p>
+              <div class="formula-box" id="momentumLessonMath">
+                \[
+                f(u,v)=\frac{1}{2}\mu u^2+\frac{1}{2}Lv^2,\qquad
+                \kappa=L/\mu.
+                \]
+              </div>
+              <p class="lesson-note" id="momentumLessonNote">
+                With gradient descent and \(\eta=1/L\), the fast mode dies in one step, but
+                the slow mode only shrinks by \(1-1/\kappa\).
+              </p>
+              <div class="lesson-controls">
+                <button class="pixel-button secondary" id="prevMomentumStep" type="button">Prev derivation</button>
+                <button class="pixel-button" id="nextMomentumStep" type="button">Next derivation</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="room-actions">
+          <button class="pixel-button secondary" type="button" data-prev-room>Back: palace gate</button>
+          <button class="pixel-button" type="button" data-next-room>Next: grafting hall</button>
+        </div>
+      </section>
+
+      <section id="grafting" class="room-band room-screen" data-room="Grafting" aria-labelledby="graftingTitle">
+        <div class="section-head">
+          <p class="eyebrow">Chamber 2</p>
+          <h2 id="graftingTitle">Grafting: Direction Is Not Magnitude</h2>
+          <p>
+            Grafting asks two optimizers a question. One optimizer contributes the step length,
+            the other contributes the direction. In practice this is usually applied per tensor or
+            per layer so each layer keeps its own trust scale.
+          </p>
+        </div>
+
+        <div class="graft-grid">
+          <div class="viz-panel">
+            <canvas id="graftCanvas" width="620" height="360" aria-label="Grafting vector visualization"></canvas>
+            <div class="legend-row">
+              <span><i class="swatch direction"></i> direction slot</span>
+              <span><i class="swatch magnitude"></i> magnitude slot</span>
+              <span><i class="swatch final"></i> grafted update</span>
+            </div>
+          </div>
+          <div class="graft-controls">
+            <label>
+              Direction source
+              <select id="graftDirection">
+                <option value="adam">Adam diagonal direction</option>
+                <option value="shampoo">Shampoo matrix direction</option>
+                <option value="muon">Muon polar direction</option>
+                <option value="sgd">SGD raw gradient</option>
+              </select>
+            </label>
+            <label>
+              Magnitude source
+              <select id="graftMagnitude">
+                <option value="sqrtN">SQRT_N sign-length</option>
+                <option value="sgd">SGD layer norm</option>
+                <option value="adam">Adam layer step norm</option>
+                <option value="shampoo">Shampoo own norm</option>
+              </select>
+            </label>
+            <label>
+              Layer scale
+              <input id="layerScale" type="range" min="0.55" max="1.8" value="1.05" step="0.05">
+            </label>
+            <div class="formula-box" id="graftFormula">
+              \[
+              \Delta W_\ell =
+              \frac{\|u^{\rm mag}_\ell\|_F}{\|u^{\rm dir}_\ell\|_F+\epsilon}
+              u^{\rm dir}_\ell
+              \]
+            </div>
+            <div class="graft-readout" id="graftReadout">
+              Direction is normalized. Magnitude is copied layer-wise. The final arrow keeps the
+              blue angle and the pink length.
+            </div>
+            <p class="source-note">
+              Layer-wise grafting makes this formula local to \(W_\ell\), so an attention matrix,
+              an MLP matrix, and an embedding table can each keep a different magnitude schedule.
+            </p>
+          </div>
+        </div>
+        <div class="room-actions">
+          <button class="pixel-button secondary" type="button" data-prev-room>Back: momentum</button>
+          <button class="pixel-button" type="button" data-next-room>Next: decay switchboard</button>
+        </div>
+      </section>
+
+      <section id="decay" class="room-band room-screen" data-room="Decay" aria-labelledby="decayTitle">
+        <div class="section-head">
+          <p class="eyebrow">Chamber 3</p>
+          <h2 id="decayTitle">Weight Decay Switchboard</h2>
+          <p>
+            Weight decay is a hidden slot in many optimizer names. The important fork is whether
+            decay enters the gradient path or is a separate shrink of the weights.
+          </p>
+        </div>
+        <div class="decay-grid">
+          <article class="decay-tile">
+            <h3>Coupled L2</h3>
+            <p>\[
+              g_t\leftarrow \nabla f(w_t)+\lambda w_t,\qquad
+              w_{t+1}=w_t-\eta P_t g_t.
+            \]</p>
+            <p>Adaptive preconditioners also precondition the decay term.</p>
+          </article>
+          <article class="decay-tile">
+            <h3>AdamW / SGDW style</h3>
+            <p>\[
+              w_{t+1}=(1-\eta\lambda)w_t-\eta u_t.
+            \]</p>
+            <p>The shrink is decoupled from the loss-gradient update but still scaled by the learning rate.</p>
+          </article>
+          <article class="decay-tile">
+            <h3>Fixed shrink</h3>
+            <p>\[
+              w_{t+1}=(1-\lambda)w_t-\eta u_t.
+            \]</p>
+            <p>This makes the shrink schedule independent of the current learning-rate schedule.</p>
+          </article>
+        </div>
+        <div class="room-actions">
+          <button class="pixel-button secondary" type="button" data-prev-room>Back: grafting</button>
+          <button class="pixel-button" type="button" data-next-room>Next: slot forge</button>
+        </div>
+      </section>
+
+      <section id="forge" class="room-band room-screen" data-room="Forge" aria-labelledby="forgeTitle">
+        <div class="section-head">
+          <p class="eyebrow">Game 1</p>
+          <h2 id="forgeTitle">Slot Forge: Fill The Update Rule</h2>
+          <p>
+            The mine names an optimizer and describes the spell. Choose the correct slots. When
+            the slots match, the forge reveals the full update rule and pays Cookie points.
+          </p>
+        </div>
+
+        <div class="forge-challenge">
+          <div class="forge-stage" aria-label="Forge machine status">
+            <div class="forge-machine" id="forgeMachine">
+              <div class="forge-backdrop">
+                <div class="forge-flame"></div>
+                <div class="forge-anvil"></div>
+                <div class="forge-crystal"></div>
+                <div class="forge-spark spark-a"></div>
+                <div class="forge-spark spark-b"></div>
+                <div class="forge-spark spark-c"></div>
+              </div>
+              <div class="forge-sockets">
+                <div class="forge-socket" id="forgeSocket-memory">
+                  <span>Memory</span><strong>?</strong>
+                </div>
+                <div class="forge-socket" id="forgeSocket-direction">
+                  <span>Direction</span><strong>?</strong>
+                </div>
+                <div class="forge-socket" id="forgeSocket-magnitude">
+                  <span>Magnitude</span><strong>?</strong>
+                </div>
+                <div class="forge-socket" id="forgeSocket-decay">
+                  <span>Decay</span><strong>?</strong>
+                </div>
+              </div>
+            </div>
+            <div class="forge-status-card">
+              <span class="target-label" id="forgeRoundCounter">Round 1 / 8</span>
+              <h3 id="forgeQuestTitle">Seal the target spell</h3>
+              <p id="forgeQuestCopy">
+                The forge accepts four runes: memory, direction, magnitude, and decay.
+              </p>
+              <div class="forge-charge" aria-label="Forge charge">
+                <span id="forgeCharge"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="target-scroll">
+            <span class="target-label">Target spell</span>
+            <h3 id="forgeTargetName">AdamW</h3>
+            <p id="forgeTargetDesc">
+              Adaptive diagonal direction with EMA moments and decoupled learning-rate-scaled
+              weight decay.
+            </p>
+            <div id="forgeTargetRule" class="formula-box">
+              \[
+              w_{t+1}=(1-\eta\lambda)w_t-\eta \frac{\hat m_t}{\sqrt{\hat v_t}+\epsilon}
+              \]
+            </div>
+          </div>
+
+          <div class="forge-choice-board" aria-label="Slot choices">
+            <div class="choice-group" data-choice-group="memory">
+              <h3>Memory</h3>
+              <div class="choice-buttons" id="forgeChoices-memory"></div>
+            </div>
+            <div class="choice-group" data-choice-group="direction">
+              <h3>Direction</h3>
+              <div class="choice-buttons" id="forgeChoices-direction"></div>
+            </div>
+            <div class="choice-group" data-choice-group="magnitude">
+              <h3>Magnitude</h3>
+              <div class="choice-buttons" id="forgeChoices-magnitude"></div>
+            </div>
+            <div class="choice-group" data-choice-group="decay">
+              <h3>Decay</h3>
+              <div class="choice-buttons" id="forgeChoices-decay"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rule-console" aria-live="polite">
+          <div>
+            <h3>Your update rule</h3>
+            <div id="updateRule" class="formula-box">
+              Select one option in every slot to reveal the optimizer spell.
+            </div>
+          </div>
+          <div class="forge-actions">
+            <button class="pixel-button" id="checkForge" type="button">Check slots</button>
+            <button class="pixel-button secondary" id="nextForgeRound" type="button">Next forge round</button>
+          </div>
+          <p id="forgeFeedback" class="feedback">Pick the four slots that match the target spell.</p>
+        </div>
+        <div class="room-actions">
+          <button class="pixel-button secondary" type="button" data-prev-room>Back: decay</button>
+          <button class="pixel-button" type="button" data-next-room>Next: naming trap</button>
+        </div>
+      </section>
+
+      <section id="quiz" class="room-band room-screen" data-room="Quiz" aria-labelledby="quizTitle">
+        <div class="section-head">
+          <p class="eyebrow">Game 2</p>
+          <h2 id="quizTitle">Name The Filled Slots</h2>
+          <p>
+            The mine fills the slots for a real optimizer variant. Pick the right name to win
+            Cookie points. Some rules have multiple accepted names, including spectral descent,
+            Shampoo beta2=0, and Muon-style sign directions.
+          </p>
+        </div>
+
+        <div class="quiz-layout">
+          <div class="quiz-slots">
+            <div><span>memory</span><strong id="quiz-memory">-</strong></div>
+            <div><span>direction</span><strong id="quiz-direction">-</strong></div>
+            <div><span>magnitude</span><strong id="quiz-magnitude">-</strong></div>
+            <div><span>decay</span><strong id="quiz-decay">-</strong></div>
+          </div>
+          <div class="quiz-panel">
+            <h3 id="quizPrompt">Which optimizer is this?</h3>
+            <div id="quizRule" class="quiz-rule formula-box"></div>
+            <div id="quizOptions" class="quiz-options"></div>
+            <p id="quizFeedback" class="feedback">Choose a gate name.</p>
+            <button class="pixel-button secondary" id="nextRound" type="button">Next round</button>
+          </div>
+        </div>
+        <div class="room-actions">
+          <button class="pixel-button secondary" type="button" data-prev-room>Back: forge</button>
+          <button class="pixel-button" type="button" data-next-room>Next: final cutscene</button>
+        </div>
+      </section>
+
+      <section id="credits" class="room-band room-screen credits-room" data-room="Credits" aria-labelledby="creditsTitle">
+        <div class="section-head">
+          <p class="eyebrow">Final cutscene</p>
+          <h2 id="creditsTitle">The Optimizer Is Free</h2>
+          <p>
+            The bars crack. The slop retreats from the kingdom. The freed optimizer carries the
+            clean update rules back to the deep learning field.
+          </p>
+        </div>
+        <div class="credits-layout">
+          <div class="final-scene" aria-label="Final pixel cutscene">
+            <div class="slop-cloud cloud-a retreat"></div>
+            <div class="slop-cloud cloud-b retreat"></div>
+            <div class="freed-orb"></div>
+            <div class="broken-prison"></div>
+            <div class="final-runner"></div>
+            <div class="story-floor"></div>
+          </div>
+          <div class="credits-scroll">
+            <h3>Credits</h3>
+            <p>Momentum vault cleared: Nesterov, heavy-ball, EMA.</p>
+            <p>Grafting hall cleared: direction separated from layer-wise magnitude.</p>
+            <p>Forge cleared: Adam, NAdam, Shampoo, Muon, spectral descent, and hybrids.</p>
+            <p>Slop warning: a benchmark without tuning rules and held-out checks is a trap room.</p>
+            <p class="victory-text">The kingdom is not saved by vibes. It is saved by update rules.</p>
+          </div>
+        </div>
+        <div class="room-actions">
+          <button class="pixel-button secondary" type="button" data-prev-room>Back: quiz</button>
+          <button class="pixel-button" type="button" data-next-room>Next: source chamber</button>
+        </div>
+      </section>
+
+      <section id="sources" class="room-band sources room-screen" data-room="Sources" aria-labelledby="sourcesTitle">
+        <div class="section-head">
+          <p class="eyebrow">Source chamber</p>
+          <h2 id="sourcesTitle">Source Trail</h2>
+        </div>
+        <ul>
+          <li>Agarwal, Anil, Hazan, Koren, Zhang: grafting decouples update magnitude from update direction; layer-wise grafting applies this per parameter group.</li>
+          <li>Gupta, Koren, Singer: Shampoo maintains per-mode preconditioners and gives stochastic convex guarantees for tensor optimization.</li>
+          <li>Anil, Gupta, Koren, Regan, Singer: scalable Shampoo replaces expensive spectral decompositions with iterative inverse-root methods and pipelines stale preconditioners.</li>
+          <li>Loshchilov and Hutter: AdamW decouples weight decay from the adaptive gradient path.</li>
+          <li>Muon notes and follow-up papers: Muon forms a matrix direction by applying Newton-Schulz style polar iterations to a momentum matrix.</li>
+        </ul>
+        <div class="room-actions">
+          <button class="pixel-button secondary" type="button" data-prev-room>Back: credits</button>
+          <button class="pixel-button" type="button" data-go-room="0">Return to gate</button>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
