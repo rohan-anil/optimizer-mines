@@ -520,7 +520,7 @@ function closeCoinPopup() {
   }
 }
 
-function moveCoinClose() {
+function moveCoinClose(force = false) {
   const popup = $("#coinPopup");
   const paper = popup?.querySelector(".coin-paper");
   const close = $("#coinClose");
@@ -533,7 +533,7 @@ function moveCoinClose() {
     return;
   }
   const now = performance.now();
-  if (now - state.coinLastDodgeAt < 350) return;
+  if (!force && now - state.coinLastDodgeAt < 350) return;
   state.coinLastDodgeAt = now;
   state.coinDodges += 1;
   const paperRect = paper.getBoundingClientRect();
@@ -541,13 +541,33 @@ function moveCoinClose() {
   const pad = 14;
   const mobilePopup = window.matchMedia("(max-width: 560px), (pointer: coarse)").matches;
   if (mobilePopup) {
-    close.style.left = "auto";
-    close.style.top = "10px";
-    close.style.right = "10px";
+    const minX = Math.max(pad, paperRect.left + pad);
+    const maxX = Math.max(minX, Math.min(window.innerWidth - closeRect.width - pad, paperRect.right - closeRect.width - pad));
+    const minY = Math.max(pad, paperRect.top + pad);
+    const maxY = Math.max(minY, Math.min(window.innerHeight - closeRect.height - pad, paperRect.top + 210));
+    const previousX = parseFloat(close.style.left);
+    const previousY = parseFloat(close.style.top);
+    let x = minX + Math.random() * (maxX - minX);
+    let y = minY + Math.random() * (maxY - minY);
+    if (Number.isFinite(previousX) && Number.isFinite(previousY) && maxX - minX > 72) {
+      let attempts = 0;
+      while (Math.hypot(x - previousX, y - previousY) < 86 && attempts < 8) {
+        x = minX + Math.random() * (maxX - minX);
+        y = minY + Math.random() * (maxY - minY);
+        attempts += 1;
+      }
+    }
+    close.style.top = `${y}px`;
+    close.style.left = `${x}px`;
+    close.style.right = "auto";
     if (hint) {
-      hint.style.left = "auto";
-      hint.style.top = "16px";
-      hint.style.right = "54px";
+      const hintWidth = Math.min(hint.getBoundingClientRect().width || 190, paperRect.width - closeRect.width - 42);
+      const hintX = x + closeRect.width + 8 + hintWidth < paperRect.right - pad
+        ? x + closeRect.width + 8
+        : Math.max(paperRect.left + pad, x - hintWidth - 8);
+      hint.style.left = `${hintX}px`;
+      hint.style.top = `${Math.max(paperRect.top + pad, y + 7)}px`;
+      hint.style.right = "auto";
       hint.textContent = state.coinDodges >= 3
         ? "x button stabilized"
         : `x button is ill-conditioned ${state.coinDodges}/3`;
@@ -599,7 +619,7 @@ function setupCoinPopup() {
   close.addEventListener("pointerenter", moveCoinClose);
   close.addEventListener("click", () => {
     if (state.coinDodges < 3) {
-      moveCoinClose();
+      moveCoinClose(true);
       playBlip("bad");
       return;
     }
