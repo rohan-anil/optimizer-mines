@@ -616,6 +616,13 @@ function setupCoinPopup() {
   const continueButton = $("#coinContinue");
   if (!popup || !close || !paper || !continueButton) return;
 
+  startMusic();
+  ["pointerdown", "touchstart", "click"].forEach((eventName) => {
+    popup.addEventListener(eventName, () => {
+      if (!popup.classList.contains("hidden")) ensureMusic(true);
+    }, true);
+  });
+
   close.addEventListener("pointerenter", moveCoinClose);
   close.addEventListener("click", () => {
     ensureMusic();
@@ -1522,10 +1529,6 @@ function musicStep() {
   audio.step += 1;
 }
 
-function mobileAudioGate() {
-  return window.matchMedia("(pointer: coarse)").matches;
-}
-
 function setupAudioContext() {
   const audio = state.music;
   if (!audio.ctx) {
@@ -1603,23 +1606,19 @@ function startMusic(fromGesture = false) {
   const audio = state.music;
   audio.wanted = true;
   armMusicUnlock();
-  if (!fromGesture && mobileAudioGate() && !audio.ctx) {
-    updateMusicUi("Tap anywhere to wake the chiptune crystal.");
-    return;
-  }
-  updateMusicUi("Music crystal waking. Click anywhere if the browser guards the gate.");
+  updateMusicUi(fromGesture ? "Music crystal active." : "Music crystal waking automatically.");
   if (!setupAudioContext()) return;
   if (audio.ctx.state === "suspended") {
     let resume;
     try {
       resume = audio.ctx.resume();
     } catch (_error) {
-      updateMusicUi("Click anywhere to wake the chiptune crystal.");
+      updateMusicUi("Browser blocked autoplay; the next input will retry music.");
       return;
     }
     if (resume && typeof resume.then === "function") {
       resume.then(beginMusicPlayback).catch(() => {
-        updateMusicUi("Click anywhere to wake the chiptune crystal.");
+        updateMusicUi("Browser blocked autoplay; the next input will retry music.");
       });
     }
     return;
